@@ -22,13 +22,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-ifeq ($(shell uname -s),Darwin)
-CONFIG_DARWIN=y
-endif
+#ifeq ($(shell uname -s),Darwin)
+#CONFIG_DARWIN=y
+#endif
 # Windows cross compilation from Linux
-#CONFIG_WIN32=y
+CONFIG_WIN32=y
 # use link time optimization (smaller and faster executables but slower build)
-CONFIG_LTO=y
+#CONFIG_LTO=y
 # consider warnings as errors (for development)
 #CONFIG_WERROR=y
 
@@ -43,7 +43,7 @@ CONFIG_DEFAULT_AR=y
 endif
 
 # installation directory
-prefix=/usr/local
+prefix=/qjs
 
 # use the gprof profiler
 #CONFIG_PROFILE=y
@@ -53,7 +53,7 @@ prefix=/usr/local
 OBJDIR=.obj
 
 ifdef CONFIG_WIN32
-  CROSS_PREFIX=i686-w64-mingw32-
+  CROSS_PREFIX=
   EXE=.exe
 else
   CROSS_PREFIX=
@@ -81,7 +81,7 @@ ifdef CONFIG_CLANG
   endif
 else
   CC=$(CROSS_PREFIX)gcc
-  CFLAGS=-g -Wall -MMD -MF $(OBJDIR)/$(@F).d
+  CFLAGS=-g -Wfatal-errors -Wno-return-type -MMD -MF $(OBJDIR)/$(@F).d
   CFLAGS += -Wno-array-bounds
   ifdef CONFIG_LTO
     AR=$(CROSS_PREFIX)gcc-ar
@@ -92,7 +92,8 @@ endif
 ifdef CONFIG_WERROR
 CFLAGS+=-Werror
 endif
-DEFINES:=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\"
+#DEFINES:=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\"
+DEFINES:= -DCONFIG_VERSION=
 CFLAGS+=$(DEFINES)
 CFLAGS_DEBUG=$(CFLAGS) -O0
 CFLAGS_SMALL=$(CFLAGS) -Os
@@ -154,7 +155,7 @@ LIBS+=-ldl
 endif
 
 $(OBJDIR):
-	mkdir -p $(OBJDIR)
+	mkdir $(OBJDIR)
 
 qjs$(EXE): $(QJS_OBJS)
 	$(CC) $(LDFLAGS) $(LDEXPORT) -o $@ $^ $(LIBS)
@@ -234,19 +235,19 @@ libunicode-table.h: unicode_gen
 endif
 
 run-test262: $(OBJDIR)/run-test262.o $(QJS_LIB_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lpthread
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 run-test262-bn: $(OBJDIR)/run-test262.bn.o $(QJSBN_LIB_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lpthread
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 run-test262-debug: $(patsubst %.o, %.debug.o, $(OBJDIR)/run-test262.o $(QJS_LIB_OBJS))
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lpthread
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 run-test262-32: $(patsubst %.o, %.m32.o, $(OBJDIR)/run-test262.o $(QJS_LIB_OBJS))
-	$(CC) -m32 $(LDFLAGS) -o $@ $^ $(LIBS) -lpthread
+	$(CC) -m32 $(LDFLAGS) -o $@ $^ $(LIBS)
 
 run-test262-bn32: $(patsubst %.o, %.m32.o, $(OBJDIR)/run-test262.bn.o $(QJSBN_LIB_OBJS))
-	$(CC) -m32 $(LDFLAGS) -o $@ $^ $(LIBS) -lpthread
+	$(CC) -m32 $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # object suffix order: bn, nolto, [m32|m32s]
 
