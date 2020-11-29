@@ -32,7 +32,7 @@ CONFIG_WIN32=y
 # consider warnings as errors (for development)
 #CONFIG_WERROR=y
 # force 32 bit build for some utilities
-#CONFIG_M32=y
+CONFIG_M32=y
 
 ifdef CONFIG_DARWIN
 # use clang instead of gcc
@@ -175,7 +175,7 @@ QJS_LIB_OBJS+=$(OBJDIR)/libbf.o
 QJS_OBJS+=$(OBJDIR)/qjscalc.o
 endif
 
-HOST_LIBS=-lm -ldl -lpthread
+HOST_LIBS=-lm -lpthread
 LIBS=-lm
 ifndef CONFIG_WIN32
 LIBS+=-ldl -lpthread
@@ -183,8 +183,8 @@ endif
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
-	mkdir $(OBJDIR)/examples
-	mkdir $(OBJDIR)/tests
+	mkdir $(OBJDIR)\examples
+	mkdir $(OBJDIR)\tests
 
 qjs$(EXE): $(QJS_OBJS)
 	$(CC) $(LDFLAGS) $(LDEXPORT) -o $@ $^ $(LIBS)
