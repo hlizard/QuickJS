@@ -15,6 +15,22 @@ function assert(actual, expected, message) {
                 (message ? " (" + message + ")" : ""));
 }
 
+function assert_throws(expected_error, func)
+{
+    var err = false;
+    try {
+        func();
+    } catch(e) {
+        err = true;
+        if (!(e instanceof expected_error)) {
+            throw Error("unexpected exception type");
+        }
+    }
+    if (!err) {
+        throw Error("expected exception");
+    }
+}
+
 // load more elaborate version of assert if available
 try { __loadScript("test_assert.js"); } catch(e) {}
 
@@ -197,18 +213,49 @@ function test_op2()
     assert((typeof null), "object", "typeof");
     assert((typeof unknown_var), "undefined", "typeof");
     
+    a = {x: 1, if: 2, async: 3};
+    assert(a.if === 2);
+    assert(a.async === 3);
+}
+
+function test_delete()
+{
+    var a, err;
+
     a = {x: 1, y: 1};
     assert((delete a.x), true, "delete");
     assert(("x" in a), false, "delete");
+    
+    /* the following are not tested by test262 */
+    assert(delete "abc"[100], true);
 
-    a = {x: 1, if: 2};
-    assert(a.if === 2);
+    err = false;
+    try {
+        delete null.a;
+    } catch(e) {
+        err = (e instanceof TypeError);
+    }
+    assert(err, true, "delete");
+
+    err = false;
+    try {
+        a = { f() { delete super.a; } };
+        a.f();
+    } catch(e) {
+        err = (e instanceof ReferenceError);
+    }
+    assert(err, true, "delete");
 }
 
 function test_prototype()
 {
-    function f() { }
+    var f = function f() { };
     assert(f.prototype.constructor, f, "prototype");
+
+    var g = function g() { };
+    /* QuickJS bug */
+    Object.defineProperty(g, "prototype", { writable: false });
+    assert(g.prototype.constructor, g, "prototype");
 }
 
 function test_arguments()
@@ -285,10 +332,198 @@ function test_template()
     var a, b;
     b = 123;
     a = `abc${b}d`;
-    assert(a === "abc123d");
+    assert(a, "abc123d");
 
     a = String.raw `abc${b}d`;
-    assert(a === "abc123d");
+    assert(a, "abc123d");
+
+    a = "aaa";
+    b = "bbb";
+    assert(`aaa${a, b}ccc`, "aaabbbccc");
+}
+
+function test_template_skip()
+{
+    var a = "Bar";
+    var { b = `${a + `a${a}` }baz` } = {};
+    assert(b, "BaraBarbaz");
+}
+
+function test_object_literal()
+{
+    var x = 0, get = 1, set = 2; async = 3;
+    a = { get: 2, set: 3, async: 4 };
+    assert(JSON.stringify(a), '{"get":2,"set":3,"async":4}');
+
+    a = { x, get, set, async };
+    assert(JSON.stringify(a), '{"x":0,"get":1,"set":2,"async":3}');
+}
+
+function test_regexp_skip()
+{
+    var a, b;
+    [a, b = /abc\(/] = [1];
+    assert(a === 1);
+    
+    [a, b =/abc\(/] = [2];
+    assert(a === 2);
+}
+
+function test_labels()
+{
+    do x: { break x; } while(0);
+    if (1)
+        x: { break x; }
+    else
+        x: { break x; }
+    with ({}) x: { break x; };
+    while (0) x: { break x; };
+}
+
+function test_destructuring()
+{
+    function * g () { return 0; };
+    var [x] = g();
+    assert(x, void 0);
+}
+
+function test_spread()
+{
+    var x;
+    x = [1, 2, ...[3, 4]];
+    assert(x.toString(), "1,2,3,4");
+
+    x = [ ...[ , ] ];
+    assert(Object.getOwnPropertyNames(x).toString(), "0,length");
+}
+
+function test_function_length()
+{
+    assert( ((a, b = 1, c) => {}).length, 1);
+    assert( (([a,b]) => {}).length, 1);
+    assert( (({a,b}) => {}).length, 1);
+    assert( ((c, [a,b] = 1, d) => {}).length, 1);
+}
+
+function test_argument_scope()
+{
+    var f;
+    var c = "global";
+    
+    f = function(a = eval("var arguments")) {};
+    assert_throws(SyntaxError, f);
+
+    f = function(a = eval("1"), b = arguments[0]) { return b; };
+    assert(f(12), 12);
+
+    f = function(a, b = arguments[0]) { return b; };
+    assert(f(12), 12);
+
+    f = function(a, b = () => arguments) { return b; };
+    assert(f(12)()[0], 12);
+
+    f = function(a = eval("1"), b = () => arguments) { return b; };
+    assert(f(12)()[0], 12);
+
+    (function() {
+        "use strict";
+        f = function(a = this) { return a; };
+        assert(f.call(123), 123);
+
+        f = function f(a = f) { return a; };
+        assert(f(), f);
+
+        f = function f(a = eval("f")) { return a; };
+        assert(f(), f);
+    })();
+
+    f = (a = eval("var c = 1"), probe = () => c) => {
+        var c = 2;
+        assert(c, 2);
+        assert(probe(), 1);
+    }
+    f();
+
+    f = (a = eval("var arguments = 1"), probe = () => arguments) => {
+        var arguments = 2;
+        assert(arguments, 2);
+        assert(probe(), 1);
+    }
+    f();
+
+    f = function f(a = eval("var c = 1"), b = c, probe = () => c) {
+        assert(b, 1);
+        assert(c, 1);
+        assert(probe(), 1)
+    }
+    f();
+
+    assert(c, "global");
+    f = function f(a, b = c, probe = () => c) {
+        eval("var c = 1");
+        assert(c, 1);
+        assert(b, "global");
+        assert(probe(), "global")
+    }
+    f();
+    assert(c, "global");
+
+    f = function f(a = eval("var c = 1"), probe = (d = eval("c")) => d) {
+        assert(probe(), 1)
+    }
+    f();
+}
+
+function test_function_expr_name()
+{
+    var f;
+
+    /* non strict mode test : assignment to the function name silently
+       fails */
+    
+    f = function myfunc() {
+        myfunc = 1;
+        return myfunc;
+    };
+    assert(f(), f);
+
+    f = function myfunc() {
+        myfunc = 1;
+        (() => {
+            myfunc = 1;
+        })();
+        return myfunc;
+    };
+    assert(f(), f);
+
+    f = function myfunc() {
+        eval("myfunc = 1");
+        return myfunc;
+    };
+    assert(f(), f);
+    
+    /* strict mode test : assignment to the function name raises a
+       TypeError exception */
+
+    f = function myfunc() {
+        "use strict";
+        myfunc = 1;
+    };
+    assert_throws(TypeError, f);
+
+    f = function myfunc() {
+        "use strict";
+        (() => {
+            myfunc = 1;
+        })();
+    };
+    assert_throws(TypeError, f);
+
+    f = function myfunc() {
+        "use strict";
+        eval("myfunc = 1");
+    };
+    assert_throws(TypeError, f);
 }
 
 test_op1();
@@ -296,7 +531,17 @@ test_cvt();
 test_eq();
 test_inc_dec();
 test_op2();
+test_delete();
 test_prototype();
 test_arguments();
 test_class();
 test_template();
+test_template_skip();
+test_object_literal();
+test_regexp_skip();
+test_labels();
+test_destructuring();
+test_spread();
+test_function_length();
+test_argument_scope();
+test_function_expr_name();

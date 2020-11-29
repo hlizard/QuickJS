@@ -17,6 +17,22 @@ function assert(actual, expected, message) {
                 (message ? " (" + message + ")" : ""));
 }
 
+function assert_throws(expected_error, func)
+{
+    var err = false;
+    try {
+        func();
+    } catch(e) {
+        err = true;
+        if (!(e instanceof expected_error)) {
+            throw Error("unexpected exception type");
+        }
+    }
+    if (!err) {
+        throw Error("expected exception");
+    }
+}
+
 // load more elaborate version of assert if available
 try { __loadScript("test_assert.js"); } catch(e) {}
 
@@ -39,7 +55,7 @@ function test_function()
     function constructor1(a) {
         this.x = a;
     }
-    
+
     var r, g;
     
     r = my_func.call(null, 1, 2);
@@ -48,6 +64,13 @@ function test_function()
     r = my_func.apply(null, [1, 2]);
     assert(r, 3, "apply");
 
+    r = (function () { return 1; }).apply(null, undefined);
+    assert(r, 1);
+
+    assert_throws(TypeError, (function() {
+        Reflect.apply((function () { return 1; }), null, undefined);
+    }));
+    
     r = new Function("a", "b", "return a + b;");
     assert(r(2,3), 5, "function");
     
@@ -125,7 +148,7 @@ function test_enum()
          "1": 2};
     tab = Object.keys(a);
 //    console.log("tab=" + tab.toString());
-    assert(tab, ["1","4294967294","4294967295","4294967296","9007199254740991","x","18014398509481984","9007199254740992","y"], "keys");
+    assert(tab, ["1","4294967294","x","18014398509481984","9007199254740992","9007199254740991","4294967296","4294967295","y"], "keys");
 }
 
 function test_array()
@@ -277,6 +300,8 @@ function test_string()
     assert("aaaa".split("aaaaa", 1), [ "aaaa" ]);
 
     assert(eval('"\0"'), "\0");
+
+    assert("abc".padStart(Infinity, ""), "abc");
 }
 
 function test_math()
@@ -287,6 +312,10 @@ function test_math()
     assert(Math.ceil(a), 2);
     assert(Math.imul(0x12345678, 123), -1088058456);
     assert(Math.fround(0.1), 0.10000000149011612);
+    assert(Math.hypot() == 0);
+    assert(Math.hypot(-2) == 2);
+    assert(Math.hypot(3, 4) == 5);
+    assert(Math.abs(Math.hypot(3, 4, 5) - 7.0710678118654755) <= 1e-15);
 }
 
 function test_number()
@@ -303,6 +332,9 @@ function test_number()
     assert(parseFloat("-Infinity"), -Infinity);
     assert(parseFloat("123.2"), 123.2);
     assert(parseFloat("123.2e3"), 123200);
+    assert(Number.isNaN(Number("+")));
+    assert(Number.isNaN(Number("-")));
+    assert(Number.isNaN(Number("\x00a")));
 
     assert((25).toExponential(0), "3e+1");
     assert((-25).toExponential(0), "-3e+1");
@@ -310,6 +342,22 @@ function test_number()
     assert((-2.5).toPrecision(1), "-3");
     assert((1.125).toFixed(2), "1.13");
     assert((-1.125).toFixed(2), "-1.13");
+}
+
+function test_eval2()
+{
+    var g_call_count = 0;
+    /* force non strict mode for f1 and f2 */
+    var f1 = new Function("eval", "eval(1, 2)");
+    var f2 = new Function("eval", "eval(...[1, 2])");
+    function g(a, b) {
+        assert(a, 1);
+        assert(b, 2);
+        g_call_count++;
+    }
+    f1(g);
+    f2(g);
+    assert(g_call_count, 2);
 }
 
 function test_eval()
@@ -345,6 +393,8 @@ function test_eval()
     assert(f("a"), 4);
     f("a=3");
     assert(a, 3);
+
+    test_eval2();
 }
 
 function test_typed_array()
@@ -408,16 +458,44 @@ function test_json()
     assert(a.y, true);
     assert(a.z, null);
     assert(JSON.stringify(a), s);
+
+    /* indentation test */
+    assert(JSON.stringify([[{x:1,y:{},z:[]},2,3]],undefined,1),
+`[
+ [
+  {
+   "x": 1,
+   "y": {},
+   "z": []
+  },
+  2,
+  3
+ ]
+]`);
 }
 
 function test_date()
 {
-    var d = new Date(1506098258091), a;
+    var d = new Date(1506098258091), a, s;
     assert(d.toISOString(), "2017-09-22T16:37:38.091Z");
     d.setUTCHours(18, 10, 11);
     assert(d.toISOString(), "2017-09-22T18:10:11.091Z");
     a = Date.parse(d.toISOString());
     assert((new Date(a)).toISOString(), d.toISOString());
+    s = new Date("2020-01-01T01:01:01.1Z").toISOString();
+    assert(s ==  "2020-01-01T01:01:01.100Z");
+    s = new Date("2020-01-01T01:01:01.12Z").toISOString();
+    assert(s ==  "2020-01-01T01:01:01.120Z");
+    s = new Date("2020-01-01T01:01:01.123Z").toISOString();
+    assert(s ==  "2020-01-01T01:01:01.123Z");
+    s = new Date("2020-01-01T01:01:01.1234Z").toISOString();
+    assert(s ==  "2020-01-01T01:01:01.123Z");
+    s = new Date("2020-01-01T01:01:01.12345Z").toISOString();
+    assert(s ==  "2020-01-01T01:01:01.123Z");
+    s = new Date("2020-01-01T01:01:01.1235Z").toISOString();
+    assert(s ==  "2020-01-01T01:01:01.124Z");
+    s = new Date("2020-01-01T01:01:01.9999Z").toISOString();
+    assert(s ==  "2020-01-01T01:01:02.000Z");
 }
 
 function test_regexp()
@@ -452,6 +530,10 @@ function test_regexp()
     a = eval("/\0a/");
     assert(a.toString(), "/\0a/");
     assert(a.exec("\0a")[0], "\0a");
+
+    assert(/{1a}/.toString(), "/{1a}/");
+    a = /a{1+/.exec("a{11");
+    assert(a, ["a{11"] );
 }
 
 function test_symbol()

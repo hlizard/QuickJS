@@ -35,6 +35,7 @@
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 #define force_inline inline __attribute__((always_inline))
 #define no_inline __attribute__((noinline))
+#define __maybe_unused __attribute__((unused))
 
 #define xglue(x, y) x ## y
 #define glue(x, y) xglue(x, y)
@@ -266,6 +267,10 @@ int __attribute__((format(printf, 2, 3))) dbuf_printf(DynBuf *s,
 void dbuf_free(DynBuf *s);
 static inline BOOL dbuf_error(DynBuf *s) {
     return s->error;
+}
+static inline void dbuf_set_error(DynBuf *s)
+{
+    s->error = TRUE;
 }
 
 #define UTF8_CHAR_LEN_MAX 6
