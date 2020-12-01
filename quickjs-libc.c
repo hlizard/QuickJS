@@ -1892,9 +1892,9 @@ static void os_signal_handler(int sig_num)
     os_pending_signals |= ((uint64_t)1 << sig_num);
 }
 
-//#if defined(_WIN32)
+#if defined(_WIN32)
 typedef void (*sighandler_t)(int sig_num);
-//#endif
+#endif
 
 static JSValue js_os_signal(JSContext *ctx, JSValueConst this_val,
                             int argc, JSValueConst *argv)
