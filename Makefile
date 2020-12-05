@@ -54,7 +54,7 @@ OBJDIR=.obj
 
 ifdef CONFIG_WIN32
   ifdef CONFIG_M32
-    CROSS_PREFIX=i686-w64-mingw32-
+    CROSS_PREFIX=
   else
     CROSS_PREFIX=x86_64-w64-mingw32-
   endif
@@ -87,7 +87,7 @@ ifdef CONFIG_CLANG
 else
   HOST_CC=gcc
   CC=$(CROSS_PREFIX)gcc
-  CFLAGS=-g -Wfatal-errors -Wno-return-type -MMD -MF $(OBJDIR)/$(@F).d
+  CFLAGS=-g -Wfatal-errors -Wno-return-type -MMD -MF $(OBJDIR)/$(@F).d -std=gnu99
   CFLAGS += -Wno-array-bounds -Wno-format-truncation
   ifdef CONFIG_LTO
     AR=$(CROSS_PREFIX)gcc-ar
@@ -175,10 +175,10 @@ QJS_LIB_OBJS+=$(OBJDIR)/libbf.o
 QJS_OBJS+=$(OBJDIR)/qjscalc.o
 endif
 
-HOST_LIBS=-lm -lpthread
+HOST_LIBS=-lm
 LIBS=-lm
 ifndef CONFIG_WIN32
-LIBS+=-ldl -lpthread
+LIBS+=-ldl
 endif
 
 $(OBJDIR):

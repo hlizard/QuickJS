@@ -1683,7 +1683,8 @@ static inline size_t js_def_malloc_usable_size(void *ptr)
     return malloc_usable_size(ptr);
 #else
     /* change this to `return 0;` if compilation fails */
-    return malloc_usable_size(ptr);
+//    return malloc_usable_size(ptr);
+    return 0;
 #endif
 }
 
@@ -1757,7 +1758,8 @@ static const JSMallocFunctions def_malloc_funcs = {
     (size_t (*)(const void *))malloc_usable_size,
 #else
     /* change this to `NULL,` if compilation fails */
-    malloc_usable_size,
+//    malloc_usable_size,
+    NULL,
 #endif
 };
 
@@ -11259,10 +11261,10 @@ static void js_ecvt1(double d, int n_digits, int *decpt, int *sign, char *buf,
                      int rounding_mode, char *buf1, int buf1_size)
 {
     if (rounding_mode != FE_TONEAREST)
-        fesetround(rounding_mode);
+        ;//fesetround(rounding_mode);
     snprintf(buf1, buf1_size, "%+.*e", n_digits - 1, d);
     if (rounding_mode != FE_TONEAREST)
-        fesetround(FE_TONEAREST);
+        ;//fesetround(FE_TONEAREST);
     *sign = (buf1[0] == '-');
     /* mantissa */
     buf[0] = buf1[1];
@@ -11343,10 +11345,10 @@ static int js_fcvt1(char *buf, int buf_size, double d, int n_digits,
 {
     int n;
     if (rounding_mode != FE_TONEAREST)
-        fesetround(rounding_mode);
+        ;//fesetround(rounding_mode);
     n = snprintf(buf, buf_size, "%.*f", n_digits, d);
     if (rounding_mode != FE_TONEAREST)
-        fesetround(FE_TONEAREST);
+        ;//fesetround(FE_TONEAREST);
     assert(n < buf_size);
     return n;
 }
@@ -39636,9 +39638,9 @@ static const JSCFunctionListEntry js_number_funcs[] = {
     JS_CFUNC_DEF("isSafeInteger", 1, js_number_isSafeInteger ),
     JS_PROP_DOUBLE_DEF("MAX_VALUE", 1.7976931348623157e+308, 0 ),
     JS_PROP_DOUBLE_DEF("MIN_VALUE", 5e-324, 0 ),
-    JS_PROP_DOUBLE_DEF("NaN", NAN, 0 ),
-    JS_PROP_DOUBLE_DEF("NEGATIVE_INFINITY", -INFINITY, 0 ),
-    JS_PROP_DOUBLE_DEF("POSITIVE_INFINITY", INFINITY, 0 ),
+    JS_PROP_DOUBLE_DEF("NaN", 0.0/0.0 /*NAN*/, 0 ),
+    JS_PROP_DOUBLE_DEF("NEGATIVE_INFINITY", -1.0/0.0 /*-INFINITY*/, 0 ),
+    JS_PROP_DOUBLE_DEF("POSITIVE_INFINITY", 1.0/0.0 /*INFINITY*/, 0 ),
     JS_PROP_DOUBLE_DEF("EPSILON", 2.220446049250313e-16, 0 ), /* ES6 */
     JS_PROP_DOUBLE_DEF("MAX_SAFE_INTEGER", 9007199254740991.0, 0 ), /* ES6 */
     JS_PROP_DOUBLE_DEF("MIN_SAFE_INTEGER", -9007199254740991.0, 0 ), /* ES6 */
@@ -41538,7 +41540,7 @@ static double js_fmin(double a, double b)
         a1.u64 |= b1.u64;
         return a1.d;
     } else {
-        return fmin(a, b);
+        return a<b?a:b;
     }
 }
 
@@ -41552,7 +41554,7 @@ static double js_fmax(double a, double b)
         a1.u64 &= b1.u64;
         return a1.d;
     } else {
-        return fmax(a, b);
+        return a>b?a:b;
     }
 }
 
@@ -47673,7 +47675,7 @@ static const JSCFunctionListEntry js_global_funcs[] = {
     JS_CFUNC_DEF("escape", 1, js_global_escape ),
     JS_CFUNC_DEF("unescape", 1, js_global_unescape ),
     JS_PROP_DOUBLE_DEF("Infinity", 1.0 / 0.0, 0 ),
-    JS_PROP_DOUBLE_DEF("NaN", NAN, 0 ),
+    JS_PROP_DOUBLE_DEF("NaN", 0.0/0.0 /*NAN*/, 0 ),
     JS_PROP_UNDEFINED_DEF("undefined", 0 ),
 
     /* for the 'Date' implementation */

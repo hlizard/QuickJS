@@ -417,6 +417,7 @@ static JSValue js_evalScript(JSContext *ctx, JSValue this_val,
     return ret;
 }
 
+#undef CONFIG_AGENT
 #ifdef CONFIG_AGENT
 
 #include <pthread.h>

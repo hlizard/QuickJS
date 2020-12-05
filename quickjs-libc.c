@@ -54,12 +54,13 @@ typedef sig_t sighandler_t;
 #define environ (*_NSGetEnviron())
 #endif
 #endif /* __APPLE__ */
+extern char **environ;
 
 #endif
 
 #if !defined(_WIN32)
 /* enable the os.Worker API. IT relies on POSIX threads */
-#define USE_WORKER
+//#define USE_WORKER
 #endif
 
 #ifdef USE_WORKER
@@ -1892,9 +1893,9 @@ static void os_signal_handler(int sig_num)
     os_pending_signals |= ((uint64_t)1 << sig_num);
 }
 
-#if defined(_WIN32)
+//#if defined(_WIN32)
 typedef void (*sighandler_t)(int sig_num);
-#endif
+//#endif
 
 static JSValue js_os_signal(JSContext *ctx, JSValueConst this_val,
                             int argc, JSValueConst *argv)
@@ -2447,7 +2448,7 @@ static JSValue js_os_readdir(JSContext *ctx, JSValueConst this_val,
     return make_obj_error(ctx, obj, err);
 }
 
-#if !defined(_WIN32)
+#if defined(_WIN32)
 static int64_t timespec_to_ms(const struct timespec *tv)
 {
     return (int64_t)tv->tv_sec * 1000 + (tv->tv_nsec / 1000000);
@@ -2507,12 +2508,12 @@ static JSValue js_os_stat(JSContext *ctx, JSValueConst this_val,
         JS_DefinePropertyValueStr(ctx, obj, "size",
                                   JS_NewInt64(ctx, st.st_size),
                                   JS_PROP_C_W_E);
-#if !defined(_WIN32)
+#if defined(_WIN32)
         JS_DefinePropertyValueStr(ctx, obj, "blocks",
                                   JS_NewInt64(ctx, st.st_blocks),
                                   JS_PROP_C_W_E);
 #endif
-#if defined(_WIN32)
+#if !defined(_WIN32)
         JS_DefinePropertyValueStr(ctx, obj, "atime",
                                   JS_NewInt64(ctx, (int64_t)st.st_atime * 1000),
                                   JS_PROP_C_W_E);
@@ -3032,7 +3033,7 @@ static JSValue js_os_kill(JSContext *ctx, JSValueConst this_val,
 }
 
 /* sleep(delay_ms) */
-static JSValue js_os_sleep(JSContext *ctx, JSValueConst this_val,
+/*static JSValue js_os_sleep(JSContext *ctx, JSValueConst this_val,
                           int argc, JSValueConst *argv)
 {
     int64_t delay;
@@ -3045,7 +3046,7 @@ static JSValue js_os_sleep(JSContext *ctx, JSValueConst this_val,
     ts.tv_nsec = (delay % 1000) * 1000000;
     ret = js_get_errno(nanosleep(&ts, NULL));
     return JS_NewInt32(ctx, ret);
-}
+}*/
 
 /* dup(fd) */
 static JSValue js_os_dup(JSContext *ctx, JSValueConst this_val,
@@ -3563,7 +3564,7 @@ static const JSCFunctionListEntry js_os_funcs[] = {
     OS_FLAG(SIGILL),
     OS_FLAG(SIGSEGV),
     OS_FLAG(SIGTERM),
-#if !defined(_WIN32)
+#if defined(_WIN32)
     OS_FLAG(SIGQUIT),
     OS_FLAG(SIGPIPE),
     OS_FLAG(SIGALRM),
@@ -3590,7 +3591,7 @@ static const JSCFunctionListEntry js_os_funcs[] = {
     OS_FLAG(S_IFDIR),
     OS_FLAG(S_IFBLK),
     OS_FLAG(S_IFREG),
-#if !defined(_WIN32)
+#if defined(_WIN32)
     OS_FLAG(S_IFSOCK),
     OS_FLAG(S_IFLNK),
     OS_FLAG(S_ISGID),
@@ -3608,7 +3609,7 @@ static const JSCFunctionListEntry js_os_funcs[] = {
     OS_FLAG(WNOHANG),
     JS_CFUNC_DEF("pipe", 0, js_os_pipe ),
     JS_CFUNC_DEF("kill", 2, js_os_kill ),
-    JS_CFUNC_DEF("sleep", 1, js_os_sleep ),
+    //JS_CFUNC_DEF("sleep", 1, js_os_sleep ),
     JS_CFUNC_DEF("dup", 1, js_os_dup ),
     JS_CFUNC_DEF("dup2", 2, js_os_dup2 ),
 #endif
