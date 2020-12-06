@@ -58,9 +58,9 @@ extern char **environ;
 
 #endif
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__DJGPP__)
 /* enable the os.Worker API. IT relies on POSIX threads */
-//#define USE_WORKER
+#define USE_WORKER
 #endif
 
 #ifdef USE_WORKER
@@ -1893,9 +1893,9 @@ static void os_signal_handler(int sig_num)
     os_pending_signals |= ((uint64_t)1 << sig_num);
 }
 
-//#if defined(_WIN32)
+#if defined(_WIN32) || defined(__DJGPP__)
 typedef void (*sighandler_t)(int sig_num);
-//#endif
+#endif
 
 static JSValue js_os_signal(JSContext *ctx, JSValueConst this_val,
                             int argc, JSValueConst *argv)
@@ -2448,7 +2448,7 @@ static JSValue js_os_readdir(JSContext *ctx, JSValueConst this_val,
     return make_obj_error(ctx, obj, err);
 }
 
-#if defined(_WIN32)
+#if !defined(_WIN32) && !defined(__DJGPP__)
 static int64_t timespec_to_ms(const struct timespec *tv)
 {
     return (int64_t)tv->tv_sec * 1000 + (tv->tv_nsec / 1000000);
@@ -2508,12 +2508,12 @@ static JSValue js_os_stat(JSContext *ctx, JSValueConst this_val,
         JS_DefinePropertyValueStr(ctx, obj, "size",
                                   JS_NewInt64(ctx, st.st_size),
                                   JS_PROP_C_W_E);
-#if defined(_WIN32)
+#if !defined(_WIN32) && !defined(__DJGPP__)
         JS_DefinePropertyValueStr(ctx, obj, "blocks",
                                   JS_NewInt64(ctx, st.st_blocks),
                                   JS_PROP_C_W_E);
 #endif
-#if !defined(_WIN32)
+#if defined(_WIN32) || defined(__DJGPP__)
         JS_DefinePropertyValueStr(ctx, obj, "atime",
                                   JS_NewInt64(ctx, (int64_t)st.st_atime * 1000),
                                   JS_PROP_C_W_E);
@@ -3564,7 +3564,7 @@ static const JSCFunctionListEntry js_os_funcs[] = {
     OS_FLAG(SIGILL),
     OS_FLAG(SIGSEGV),
     OS_FLAG(SIGTERM),
-#if defined(_WIN32)
+#if !defined(_WIN32) && !defined(__DJGPP__)
     OS_FLAG(SIGQUIT),
     OS_FLAG(SIGPIPE),
     OS_FLAG(SIGALRM),
@@ -3591,7 +3591,7 @@ static const JSCFunctionListEntry js_os_funcs[] = {
     OS_FLAG(S_IFDIR),
     OS_FLAG(S_IFBLK),
     OS_FLAG(S_IFREG),
-#if defined(_WIN32)
+#if !defined(_WIN32) && !defined(__DJGPP__)
     OS_FLAG(S_IFSOCK),
     OS_FLAG(S_IFLNK),
     OS_FLAG(S_ISGID),

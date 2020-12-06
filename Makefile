@@ -87,7 +87,7 @@ ifdef CONFIG_CLANG
 else
   HOST_CC=gcc
   CC=$(CROSS_PREFIX)gcc
-  CFLAGS=-g -Wfatal-errors -Wno-return-type -MMD -MF $(OBJDIR)/$(@F).d -std=gnu99
+  CFLAGS=-g -Wfatal-errors -Wno-return-type -MMD -MF $(OBJDIR)/$(@F).d
   CFLAGS += -Wno-array-bounds -Wno-format-truncation
   ifdef CONFIG_LTO
     AR=$(CROSS_PREFIX)gcc-ar
@@ -100,7 +100,7 @@ ifdef CONFIG_WERROR
 CFLAGS+=-Werror
 endif
 #DEFINES:=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\"
-DEFINES:= -DCONFIG_VERSION=\"2020-11-08\"
+DEFINES:=-D_GNU_SOURCE -DCONFIG_VERSION=\"2020-11-08\"
 ifdef CONFIG_BIGNUM
 DEFINES+=-DCONFIG_BIGNUM
 endif
@@ -187,6 +187,9 @@ $(OBJDIR):
 	mkdir $(OBJDIR)\tests
 
 qjs$(EXE): $(QJS_OBJS)
+	$(CC) $(LDFLAGS) $(LDEXPORT) -o $@ $^ $(LIBS)
+
+tsc$(EXE): $(OBJDIR)/out1440.o $(QJS_LIB_OBJS)
 	$(CC) $(LDFLAGS) $(LDEXPORT) -o $@ $^ $(LIBS)
 
 qjs-debug$(EXE): $(patsubst %.o, %.debug.o, $(QJS_OBJS))
