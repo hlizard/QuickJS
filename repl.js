@@ -47,7 +47,7 @@ import * as os from "os";
     var has_bignum = (typeof BigFloat === "function");
     
     var colors = {
-        none:    "\x1b[0m",
+        none:    "",//"\x1b[0m",
         black:   "\x1b[30m",
         red:     "\x1b[31m",
         green:   "\x1b[32m",
@@ -64,7 +64,7 @@ import * as os from "os";
         bright_blue:    "\x1b[34;1m",
         bright_magenta: "\x1b[35;1m",
         bright_cyan:    "\x1b[36;1m",
-        bright_white:   "\x1b[37;1m",
+        bright_white:   "",//"\x1b[37;1m",
     };
 
     var styles;
@@ -117,7 +117,7 @@ import * as os from "os";
     var ps2 = "  ... ";
     var utf8 = true;
     var show_time = false;
-    var show_colors = true;
+    var show_colors = false;
     var eval_time = 0;
     
     var mexpr = "";
@@ -318,7 +318,7 @@ import * as os from "os";
                 std.puts(" \x08");
             }
             /* remove the trailing characters */
-            std.puts("\x1b[J");
+            // std.puts("\x1b[J");
             last_cmd = cmd;
             last_cursor_pos = cmd.length;
         }
